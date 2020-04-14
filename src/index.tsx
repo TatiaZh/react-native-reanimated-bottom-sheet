@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Dimensions, Platform, View, LayoutChangeEvent } from 'react-native'
+import { Dimensions, Platform, View, LayoutChangeEvent, Keyboard } from 'react-native'
 import Animated from 'react-native-reanimated'
 import {
   PanGestureHandler,
@@ -125,6 +125,7 @@ type State = {
   heightOfContent: Animated.Value<number>
   heightOfHeader: number
   heightOfHeaderAnimated: Animated.Value<number>
+  keyboardOpen: boolean
 }
 
 const { height: screenHeight } = Dimensions.get('window')
@@ -491,6 +492,31 @@ export default class BottomSheetBehavior extends React.Component<Props, State> {
       masterOffseted
     )
   }
+          	
+  componentDidMount(){
+    this.keyboardDidShowListener = Keyboard.addListener(
+      Platform.select({
+        ios: 'keyboardWillShow',
+        android: 'keyboardDidShow',
+      }),
+      ({ endCoordinates }) => {
+        this.setState(
+          {
+            keyboardOpen: true
+          }
+        );
+      }
+    );
+    this.keyboardDidHideListener = Keyboard.addListener(
+      Platform.select({
+        ios: 'keyboardWillHide',
+        android: 'keyboardDidHide',
+      }),
+      () => {
+        this.setState({ keyboardOpen: false})
+      }
+    );
+  }
 
   componentDidUpdate(_prevProps: Props, prevState: State) {
     const { snapPoints } = this.state
@@ -706,7 +732,7 @@ export default class BottomSheetBehavior extends React.Component<Props, State> {
       layout: { height },
     },
   }: LayoutChangeEvent) =>
-    requestAnimationFrame(() => this.height.setValue(height))
+    requestAnimationFrame(() => !this.state.keyboardOpen && this.height.setValue(height))
 
   private handleLayoutContent = ({
     nativeEvent: {
